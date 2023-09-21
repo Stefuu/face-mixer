@@ -12,6 +12,7 @@ export default function DropdownPage() {
   const [mergedImage, setMergedImage] = useState<string>("");
   const [mergedName, setMergedName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [filteredPeople, setFilteredPeople] = useState<any[]>([]);
 
   const runAsync = async () => {
     const result = await axios.get("/api/people");
@@ -24,8 +25,12 @@ export default function DropdownPage() {
       .catch((err) => console.error(err));
   }, []);
 
+  useEffect(() => {
+    setFilteredPeople(people);
+  }, [people]);
+
   function handleSelectPerson(person: any, dropdown: number) {
-    console.log("selected person", person);
+    setFilteredPeople(people);
     if (dropdown === 1) {
       setLeftDropdownOpen(false);
       setPerson1(person);
@@ -48,13 +53,23 @@ export default function DropdownPage() {
 
       axios
         .post("/api/gpt3", {
-          prompt: `merge those two names into a name that is a combination of the two, but try to make a believable name out of it, the name must be at most a two word name, all words must be capitalized\n${person1.name}\n${person2.name}`,
+          prompt: `merge those two names into a name that is a combination of the two, the result must contain two words and should each word should not be exactly equal to the original names. All text response must be lowercase except for the first letter of each word, do not add punctuation\n${person1.name}\n${person2.name}`,
         })
         .then((res) => {
           setMergedName(res.data);
         })
         .catch((err) => console.error(err));
     }
+  }
+
+  function handleLeftDropdownChange(e: any) {
+    const value = e.target.value;
+    console.log("value", value);
+    const filteredPeople = people.filter((person) =>
+      person.name.toLowerCase().includes(value.toLowerCase())
+    );
+    console.log("filteredPeople", filteredPeople);
+    setFilteredPeople(filteredPeople);
   }
   console.log("mergedName", mergedName);
   return (
@@ -65,12 +80,14 @@ export default function DropdownPage() {
             leftDropdownOpen ? "dropdown-open" : ""
           }`}
         >
-          <button
+          <input
+            placeholder="Select person"
+            type="text"
+            onChange={handleLeftDropdownChange}
             onClick={() => setLeftDropdownOpen(!leftDropdownOpen)}
             className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Left Dropdown
-          </button>
+          />
+
           {person1 && (
             <div className="max-w-md mx-auto">
               <div className="bg-white shadow-lg rounded-lg">
@@ -84,14 +101,14 @@ export default function DropdownPage() {
             </div>
           )}
           <div
-            className={`origin-top-left absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition ease-in-out duration-150 ${
+            className={`origin-top-left top-[30px] absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition ease-in-out duration-150 ${
               leftDropdownOpen
                 ? "scale-y-100 opacity-100"
                 : "scale-y-0 opacity-0"
             } transform`}
           >
             <div className="py-1">
-              {people.map((person) => (
+              {filteredPeople.map((person) => (
                 <div
                   key={person.name + "1"}
                   onClick={() => handleSelectPerson(person, 1)}
@@ -103,18 +120,35 @@ export default function DropdownPage() {
             </div>
           </div>
         </div>
-        <div className="w-10 h-15" />
+        <div className="w-5 h-15" />
+        {mergedImage && !loading && (
+          <div className="max-w-md mx-auto">
+            <div className="bg-white shadow-lg rounded-lg">
+              <img
+                src={mergedImage}
+                alt="Your Image"
+                className="w-full h-auto rounded-t-lg"
+              />
+              <div className="px-6 py-4">
+                {mergedName ? mergedName : "Loading..."}
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="w-5 h-15" />
         <div
           className={`relative inline-block text-left ${
             rightDropdownOpen ? "dropdown-open" : ""
           }`}
         >
-          <button
+          <input
+            placeholder="Select person"
+            type="text"
+            onChange={handleLeftDropdownChange}
             onClick={() => setRightDropdownOpen(!rightDropdownOpen)}
             className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Right Dropdown
-          </button>
+          />
+
           {person2 && (
             <div className="max-w-md mx-auto">
               <div className="bg-white shadow-lg rounded-lg">
@@ -129,14 +163,14 @@ export default function DropdownPage() {
             </div>
           )}
           <div
-            className={`origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition ease-in-out duration-150 ${
+            className={`top-[30px] origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transition ease-in-out duration-150 ${
               rightDropdownOpen
                 ? "scale-y-100 opacity-100"
                 : "scale-y-0 opacity-0"
             } transform`}
           >
             <div className="py-1">
-              {people.map((person) => (
+              {filteredPeople.map((person) => (
                 <div
                   key={person.name + "2"}
                   onClick={() => handleSelectPerson(person, 2)}
@@ -161,21 +195,6 @@ export default function DropdownPage() {
           </button>
         )}
       </div>
-      <div className="h-10 w-10" />
-      {mergedImage && !loading && (
-        <div className="max-w-md mx-auto">
-          <div className="bg-white shadow-lg rounded-lg">
-            <img
-              src={mergedImage}
-              alt="Your Image"
-              className="w-full h-auto rounded-t-lg"
-            />
-            <div className="px-6 py-4">
-              {mergedName ? mergedName : "Loading..."}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
