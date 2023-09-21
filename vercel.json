@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/mix/route.ts": {
+      "maxDuration": 1200
+    }
+  }
+}
