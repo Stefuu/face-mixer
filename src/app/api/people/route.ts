@@ -19,6 +19,6 @@ export async function GET() {
     );
   } catch (e) {
     console.log(e);
-    return createErrorResponse("Error generating images", 500);
+    return createErrorResponse("Error generating images.", 500);
   }
 }
