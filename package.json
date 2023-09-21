@@ -9,17 +9,26 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindui/react": "^0.1.1",
     "@types/node": "20.6.3",
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.16",
+    "axios": "^1.5.0",
     "eslint": "8.49.0",
     "eslint-config-next": "13.5.2",
+    "formidable": "^3.5.1",
+    "multiparty": "^4.2.3",
     "next": "13.5.2",
     "postcss": "8.4.30",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "replicate": "^0.18.0",
     "tailwindcss": "3.3.3",
     "typescript": "5.2.2"
+  },
+  "devDependencies": {
+    "@types/formidable": "^3.4.3",
+    "@types/multiparty": "^0.0.33"
   }
 }
