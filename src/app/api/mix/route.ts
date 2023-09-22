@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
-import { createErrorResponse } from "../../../../utils";
 
-var fs = require("fs");
-
-export async function POST(req: any, res: any) {
+export async function POST(req: any) {
   const { person1, person2 } = await req.json();
   const replicate = new Replicate({
     auth: process.env.REPLICATE_IMAGE_MIXER_KEY!,
@@ -24,6 +21,9 @@ export async function POST(req: any, res: any) {
     return NextResponse.json(output);
   } catch (e) {
     console.log(e);
-    return createErrorResponse("Error generating images", 500);
+    return new NextResponse(JSON.stringify(e), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
