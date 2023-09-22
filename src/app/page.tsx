@@ -2,6 +2,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import Spinner from "./components/Spinner";
+import PersonDescriptionField from "./components/Description";
+import { useGlobal } from "./context/globalContext";
+import LoadingOverlay from "./components/OverlayLoading";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function DropdownPage() {
   const [leftDropdownOpen, setLeftDropdownOpen] = useState(false);
@@ -12,17 +17,25 @@ export default function DropdownPage() {
   const [mergedImage, setMergedImage] = useState<string>("");
   const [mergedName, setMergedName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingPeople, setLoadingPeople] = useState<boolean>(true);
   const [filteredPeople, setFilteredPeople] = useState<any[]>([]);
+  const [mergedDescription, setMergedDescription] = useState<string>("");
+  const [loadingDescription, setLoadingDescription] = useState<boolean>(false);
 
-  const runAsync = async () => {
-    const result = await axios.get("/api/people");
-    return result;
-  };
+  const { pdp1, pdp2, setPdp1, setPdp2 } = useGlobal();
 
   useEffect(() => {
-    runAsync()
-      .then((res: any) => setPeople(res.data))
-      .catch((err) => console.error(err));
+    setLoadingPeople(true);
+    axios
+      .get("/api/people")
+      .then((res: any) => {
+        setPeople(res.data);
+        setLoadingPeople(false);
+      })
+      .catch((err) => {
+        setLoadingPeople(false);
+        console.error(err);
+      });
   }, []);
 
   useEffect(() => {
@@ -30,17 +43,63 @@ export default function DropdownPage() {
   }, [people]);
 
   function handleSelectPerson(person: any, dropdown: number) {
+    setMergedDescription("");
     setFilteredPeople(people);
     if (dropdown === 1) {
       setLeftDropdownOpen(false);
       setPerson1(person);
+      setPdp1(null);
+      axios
+        .post("/api/pdp", {
+          name: person.name,
+          emails: [person.email],
+        })
+        .then((pdpRes) => {
+          setPdp1(pdpRes.data);
+        })
+        .catch(({ response }) => {
+          toast.error(<>Could not find {response.data.name}'s PDP</>, {
+            position: "bottom-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
     } else {
       setRightDropdownOpen(false);
       setPerson2(person);
+      setPdp2(null);
+      axios
+        .post("/api/pdp", {
+          name: person.name,
+          emails: [person.email],
+        })
+        .then((pdpRes) => {
+          setPdp2(pdpRes.data);
+        })
+        .catch(({ response }) => {
+          toast.error(<>Could not find {response.data.name}'s PDP</>, {
+            position: "bottom-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
     }
   }
 
-  function merge() {
+  async function merge() {
+    setMergedDescription("");
+
+    let mergedNameResponse;
     if (person1 && person2) {
       setLoading(true);
       axios
@@ -49,45 +108,94 @@ export default function DropdownPage() {
           setMergedImage(res.data);
           setLoading(false);
         })
-        .catch((err) => console.error(err));
+        .catch((err) => {
+          console.error(err);
+          setLoading(false);
+        });
 
-      axios
-        .post("/api/gpt3", {
-          prompt: `merge those two names into a name that is a combination of the two, the result must contain two words and should each word should not be exactly equal to the original names. All text response must be lowercase except for the first letter of each word, do not add punctuation\n${person1.name}\n${person2.name}`,
-        })
-        .then((res) => {
-          setMergedName(res.data);
-        })
-        .catch((err) => console.error(err));
+      const res = await axios.post("/api/gpt4", {
+        prompt: `merge those two names into a name that is a combination of the two, the result must contain two words and should each word should not be exactly equal to the original names. The generated names must be capitalized, do not add punctuation\n${person1.name}\n${person2.name}`,
+      });
+      mergedNameResponse = res.data;
+      setMergedName(mergedNameResponse);
+    }
+
+    if (pdp1 && pdp2) {
+      setLoadingDescription(true);
+      const pdp1Desc = await axios.post("/api/gpt4", {
+        prompt: `Give me a short description of this person based on all of this characteristics\n${JSON.stringify(
+          pdp1
+        )}`,
+      });
+      const pdp2Desc = await axios.post("/api/gpt4", {
+        prompt: `Give me a short description of this person based on all of this characteristics\n${JSON.stringify(
+          pdp2
+        )}`,
+      });
+
+      const merged = await axios.post("/api/gpt4", {
+        prompt: `Give me a very short description of ${mergedNameResponse} (${mergedNameResponse} is it's name, don't change it) a fictional person that is the fusion of these two people\nperson 1: ${pdp1Desc.data}\nperson 2: ${pdp2Desc.data}\n\nTry to actually merge their traits instead of just mentioning both of them. Also don't mention that they are a fictional character and don't mention that it is a fusion, treat it like it was a real person`,
+      });
+      setLoadingDescription(false);
+      setMergedDescription(merged.data);
     }
   }
 
-  function handleLeftDropdownChange(e: any) {
+  function handleDropdownChange(e: any) {
     const value = e.target.value;
-    console.log("value", value);
+
     const filteredPeople = people.filter((person) =>
       person.name.toLowerCase().includes(value.toLowerCase())
     );
-    console.log("filteredPeople", filteredPeople);
+
     setFilteredPeople(filteredPeople);
   }
-  console.log("mergedName", mergedName);
+
   return (
     <div className="container mx-auto p-4">
+      {mergedImage && !loading && (
+        <div className="hide-above-md">
+          <div className="max-w-md mx-auto">
+            <div className="bg-white shadow-lg rounded-lg">
+              <img
+                src={mergedImage}
+                alt="Your Image"
+                className="w-full h-auto rounded-t-lg"
+              />
+              <div className="px-6 py-4">
+                {mergedName ? mergedName : "Loading..."}
+              </div>
+            </div>
+          </div>
+          <div style={{ height: "15px" }} />
+        </div>
+      )}
       <div className="flex justify-between">
         <div
           className={`relative inline-block text-left  ${
             leftDropdownOpen ? "dropdown-open" : ""
           }`}
         >
-          <input
-            placeholder="Select person"
-            type="text"
-            onChange={handleLeftDropdownChange}
-            onClick={() => setLeftDropdownOpen(!leftDropdownOpen)}
-            className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          />
-
+          <div className="flex items-center mb-2">
+            <input
+              placeholder="Select person"
+              type="text"
+              onChange={handleDropdownChange}
+              onClick={() => setLeftDropdownOpen(!leftDropdownOpen)}
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            />
+            <div
+              className="ml-2 cursor-pointer"
+              onClick={() => {
+                handleSelectPerson(
+                  people[Math.floor(Math.random() * people.length)],
+                  1
+                );
+              }}
+            >
+              <div className="fa-regular fa-dice fa-2xl " />
+            </div>
+          </div>
           {person1 && (
             <div className="max-w-md mx-auto">
               <div className="bg-white shadow-lg rounded-lg">
@@ -122,17 +230,20 @@ export default function DropdownPage() {
         </div>
         <div className="w-5 h-15" />
         {mergedImage && !loading && (
-          <div className="max-w-md mx-auto">
-            <div className="bg-white shadow-lg rounded-lg">
-              <img
-                src={mergedImage}
-                alt="Your Image"
-                className="w-full h-auto rounded-t-lg"
-              />
-              <div className="px-6 py-4">
-                {mergedName ? mergedName : "Loading..."}
+          <div className="hide-below-md min-w-[500px]">
+            <div className="max-w-md mx-auto">
+              <div className="bg-white shadow-lg rounded-lg">
+                <img
+                  src={mergedImage}
+                  alt="Your Image"
+                  className="w-full h-auto rounded-t-lg"
+                />
+                <div className="px-6 py-4">
+                  {mergedName ? mergedName : "Loading..."}
+                </div>
               </div>
             </div>
+            <div style={{ height: "15px" }} />
           </div>
         )}
         <div className="w-5 h-15" />
@@ -141,14 +252,26 @@ export default function DropdownPage() {
             rightDropdownOpen ? "dropdown-open" : ""
           }`}
         >
-          <input
-            placeholder="Select person"
-            type="text"
-            onChange={handleLeftDropdownChange}
-            onClick={() => setRightDropdownOpen(!rightDropdownOpen)}
-            className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          />
-
+          <div className="flex items-center mb-2">
+            <input
+              placeholder="Select person"
+              type="text"
+              onChange={handleDropdownChange}
+              onClick={() => setRightDropdownOpen(!rightDropdownOpen)}
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            />
+            <div
+              className="ml-2 cursor-pointer"
+              onClick={() => {
+                handleSelectPerson(
+                  people[Math.floor(Math.random() * people.length)],
+                  2
+                );
+              }}
+            >
+              <div className="mt-1 fa-regular fa-dice fa-2xl " />
+            </div>
+          </div>
           {person2 && (
             <div className="max-w-md mx-auto">
               <div className="bg-white shadow-lg rounded-lg">
@@ -195,6 +318,16 @@ export default function DropdownPage() {
           </button>
         )}
       </div>
+      {loadingDescription && (
+        <div style={{ width: "100%", textAlign: "center", marginTop: "20px" }}>
+          <div>Loading description...</div>
+        </div>
+      )}
+      {mergedDescription && pdp1 && pdp2 && (
+        <PersonDescriptionField description={mergedDescription} />
+      )}
+      <LoadingOverlay isLoading={loadingPeople} />
+      <ToastContainer />
     </div>
   );
 }
