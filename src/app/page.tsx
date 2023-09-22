@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 "use client";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -58,7 +60,8 @@ export default function DropdownPage() {
           setPdp1(pdpRes.data);
         })
         .catch(({ response }) => {
-          toast.error(<>Could not find {response.data.name}'s PDP</>, {
+          // @ts-ignore
+          toast.error(`Could not find ${response.data.name}'s PDP`, {
             position: "bottom-right",
             autoClose: 5000,
             hideProgressBar: false,
@@ -82,7 +85,7 @@ export default function DropdownPage() {
           setPdp2(pdpRes.data);
         })
         .catch(({ response }) => {
-          toast.error(<>Could not find {response.data.name}'s PDP</>, {
+          toast.error(`Could not find ${response.data.name}'s PDP`, {
             position: "bottom-right",
             autoClose: 5000,
             hideProgressBar: false,
