@@ -1,5 +1,3 @@
-//@ts-nocheck
-
 "use client";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -9,6 +7,9 @@ import { useGlobal } from "./context/globalContext";
 import LoadingOverlay from "./components/OverlayLoading";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./components/LoadingText.css";
+import LoadingText from "./components/LoadingText";
+import { funnyLoadingMessages } from "../../utils";
 
 export default function DropdownPage() {
   const [leftDropdownOpen, setLeftDropdownOpen] = useState(false);
@@ -323,7 +324,7 @@ export default function DropdownPage() {
       </div>
       {loadingDescription && (
         <div style={{ width: "100%", textAlign: "center", marginTop: "20px" }}>
-          <div>Loading description...</div>
+          <LoadingText strings={funnyLoadingMessages} />
         </div>
       )}
       {mergedDescription && pdp1 && pdp2 && (
