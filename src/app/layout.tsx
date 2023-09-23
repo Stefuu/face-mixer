@@ -1,8 +1,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { GlobalProvider } from "./context/globalContext";
+import { GlobalProvider, useGlobal } from "./context/globalContext";
 import Script from "next/script";
+import { useEffect } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 

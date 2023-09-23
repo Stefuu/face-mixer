@@ -5,7 +5,9 @@ interface RandomStringProps {
 }
 
 const LoadingText: React.FC<RandomStringProps> = ({ strings }) => {
-  const [randomString, setRandomString] = useState<string>(strings[0]);
+  const [randomString, setRandomString] = useState<string>(
+    strings[Math.floor(Math.random() * strings.length)]
+  );
 
   useEffect(() => {
     const intervalId = setInterval(() => {

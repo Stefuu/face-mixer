@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface GlobalValue {
   pdp1: string | null;
@@ -24,10 +24,18 @@ export function useGlobal() {
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const [pdp1, setPdp1] = useState<string | null>(null);
   const [pdp2, setPdp2] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const email = localStorage.getItem("email");
+    if (email) setEmail(email);
+  }, []);
 
   return (
     <Global.Provider
       value={{
+        email,
+        setEmail,
         pdp1,
         pdp2,
         setPdp1,

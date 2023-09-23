@@ -10,8 +10,10 @@ import "react-toastify/dist/ReactToastify.css";
 import "./components/LoadingText.css";
 import LoadingText from "./components/LoadingText";
 import { funnyLoadingMessages } from "../../utils";
+import { redirect } from "next/navigation";
 
 export default function DropdownPage() {
+  const [showPage, setShowPage] = useState<boolean>(false);
   const [leftDropdownOpen, setLeftDropdownOpen] = useState(false);
   const [rightDropdownOpen, setRightDropdownOpen] = useState(false);
   const [people, setPeople] = useState<any[]>([]);
@@ -25,7 +27,19 @@ export default function DropdownPage() {
   const [mergedDescription, setMergedDescription] = useState<string>("");
   const [loadingDescription, setLoadingDescription] = useState<boolean>(false);
 
-  const { pdp1, pdp2, setPdp1, setPdp2 } = useGlobal();
+  const { pdp1, pdp2, setPdp1, setPdp2, email } = useGlobal();
+
+  useEffect(() => {
+    const persistedEmail = email ?? localStorage.getItem("email");
+    if (!persistedEmail) {
+      redirect("/gsi");
+    }
+    if (!persistedEmail.includes("ae.studio")) {
+      redirect("/custom");
+    } else {
+      setShowPage(true);
+    }
+  }, [email]);
 
   useEffect(() => {
     setLoadingPeople(true);
@@ -154,6 +168,7 @@ export default function DropdownPage() {
 
     setFilteredPeople(filteredPeople);
   }
+  if (!showPage) return false;
 
   return (
     <div className="container mx-auto p-4">
